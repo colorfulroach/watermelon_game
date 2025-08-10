@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍉 合成大西瓜 - 游戏中</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .game-header {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .score-info {
+            display: flex;
+            gap: 20px;
+        }
+
+        .score, .best-score {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #48CAE4, #0077B6);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn.danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        }
+
+        .game-area {
+            position: relative;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        #gameCanvas {
+            border: 3px solid #333;
+            border-radius: 15px;
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 100%);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            touch-action: none;
+        }
+
+        .side-panel {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 15px;
+            width: 120px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .next-fruit {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .next-fruit h4 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        #nextCanvas {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+        }
+
+        .game-info {
+            font-size: 0.8em;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 20% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 300px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .modal-content p {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .side-panel {
+                width: 100%;
+                max-width: 380px;
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+            }
+            
+            .game-info {
+                display: none;
+            }
+            
+            #gameCanvas {
+                width: 100%;
+                max-width: 380px;
+                height: auto;
+            }
+            
+            .game-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .score-info {
+                order: 2;
+            }
+        }
+
+        .drop-line {
+            position: absolute;
+            width: 2px;
+            background: rgba(255, 0, 0, 0.5);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            animation: particle-float 1s ease-out forwards;
+        }
+
+        @keyframes particle-float {
+            to {
+                transform: translateY(-100px) scale(0);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-header">
+        <div class="controls">
+            <button class="btn danger" onclick="goHome()">🏠 主页</button>
+            <button class="btn" id="pauseBtn" onclick="togglePause()">⏸️ 暂停</button>
+        </div>
+        <div class="score-info">
+            <div class="score">分数: <span id="score">0</span></div>
+            <div class="best-score">最高: <span id="bestScore">0</span></div>
+        </div>
+    </div>
+
+    <div class="game-area">
+        <canvas id="gameCanvas" width="380" height="600"></canvas>
+        
+        <div class="side-panel">
+            <div class="next-fruit">
+                <h4>下一个:</h4>
+                <canvas id="nextCanvas" width="60" height="60"></canvas>
+            </div>
+            
+            <div class="game-info">
+                <p>🖱️ 移动控制位置</p>
+                <p>👆 点击投放水果</p>
+                <p>🍇 相同水果合成</p>
+                <p>🎯 合成大西瓜！</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameOverModal" class="modal">
+        <div class="modal-content">
+            <h2>🎮 游戏结束</h2>
+            <p>最终得分: <span id="finalScore">0</span></p>
+            <div class="modal-buttons">
+                <button class="btn" onclick="restartGame()">🔄 再来一局</button>
+                <button class="btn danger" onclick="goHome()">🏠 返回主页</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 简化的 Matter.js 核心功能
+        const Matter = {
+            Engine: {
+                create: function() {
+                    return {
+                        world: {
+                            gravity: { x: 0, y: 0.8 },
+                            bodies: []
+                        },
+                        timing: {
+                            timestamp: 0
+                        }
+                    };
+                },
+                update: function(engine, delta = 16.666) {
+                    const world = engine.world;
+                    const dt = delta / 1000;
+                    
+                    // 简化的物理更新
+                    world.bodies.forEach(body => {
+                        if (!body.isStatic) {
+                            // 应用重力
+                            body.velocity.y += world.gravity.y * dt * 60;
+                            
+                            // 更新位置
+                            body.position.x += body.velocity.x * dt * 60;
+                            body.position.y += body.velocity.y * dt * 60;
+                            
+                            // 简单的边界碰撞
+                            if (body.position.x - body.circleRadius < 0) {
+                                body.position.x = body.circleRadius;
+                                body.velocity.x *= -0.5;
+                            }
+                            if (body.position.x + body.circleRadius > 380) {
+                                body.position.x = 380 - body.circleRadius;
+                                body.velocity.x *= -0.5;
+                            }
+                            if (body.position.y + body.circleRadius > 600) {
+                                body.position.y = 600 - body.circleRadius;
+                                body.velocity.y *= -0.3;
+                                body.velocity.x *= 0.8; // 摩擦
+                            }
+                            
+                            // 简单的阻尼
+                            body.velocity.x *= 0.995;
+                            body.velocity.y *= 0.995;
+                        }
+                    });
+                    
+                    // 简化的碰撞检测
+                    for (let i = 0; i < world.bodies.length; i++) {
+                        for (let j = i + 1; j < world.bodies.length; j++) {
+                            const bodyA = world.bodies[i];
+                            const bodyB = world.bodies[j];
+                            
+                            if (!bodyA.isStatic && !bodyB.isStatic) {
+                                const dx = bodyA.position.x - bodyB.position.x;
+                                const dy = bodyA.position.y - bodyB.position.y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                const minDistance = bodyA.circleRadius + bodyB.circleRadius;
+                                
+                                if (distance < minDistance) {
+                                    // 碰撞响应
+                                    const overlap = minDistance - distance;
+                                    const separationX = (dx / distance) * overlap * 0.5;
+                                    const separationY = (dy / distance) * overlap * 0.5;
+                                    
+                                    bodyA.position.x += separationX;
+                                    bodyA.position.y += separationY;
+                                    bodyB.position.x -= separationX;
+                                    bodyB.position.y -= separationY;
+                                    
+                                    // 速度交换（简化）
+                                    const tempVx = bodyA.velocity.x;
+                                    const tempVy = bodyA.velocity.y;
+                                    bodyA.velocity.x = bodyB.velocity.x * 0.8;
+                                    bodyA.velocity.y = bodyB.velocity.y * 0.8;
+                                    bodyB.velocity.x = tempVx * 0.8;
+                                    bodyB.velocity.y = tempVy * 0.8;
+                                    
+                                    // 合成检查
+                                    if (bodyA.fruitType === bodyB.fruitType && 
+                                        !bodyA.isNewlyDropped && !bodyB.isNewlyDropped &&
+                                        bodyA.fruitType < fruitConfig.length - 1) {
+                                        game.mergeFruits(bodyA, bodyB);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            Bodies: {
+                circle: function(x, y, radius, options = {}) {
+                    return {
+                        position: { x, y },
+                        velocity: { x: 0, y: 0 },
+                        circleRadius: radius,
+                        isStatic: options.isStatic || false,
+                        fruitType: options.fruitType,
+                        isNewlyDropped: options.isNewlyDropped || false
+                    };
+                }
+            },
+            World: {
+                add: function(world, bodies) {
+                    if (Array.isArray(bodies)) {
+                        world.bodies.push(...bodies);
+                    } else {
+                        world.bodies.push(bodies);
+                    }
+                },
+                remove: function(world, bodies) {
+                    if (Array.isArray(bodies)) {
+                        bodies.forEach(body => {
+                            const index = world.bodies.indexOf(body);
+                            if (index > -1) world.bodies.splice(index, 1);
+                        });
+                    } else {
+                        const index = world.bodies.indexOf(bodies);
+                        if (index > -1) world.bodies.splice(index, 1);
+                    }
+                }
+            }
+        };
+
+        // 游戏类
+        class WatermelonGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.nextCanvas = document.getElementById('nextCanvas');
+                this.nextCtx = this.nextCanvas.getContext('2d');
+                
+                // 游戏状态
+                this.isGameRunning = false;
+                this.isPaused = false;
+                this.score = 0;
+                this.bestScore = parseInt(localStorage.getItem('bestScore')) || 0;
+                this.gameOver = false;
+                
+                // 物理引擎
+                this.engine = Matter.Engine.create();
+                this.world = this.engine.world;
+                
+                // 游戏对象
+                this.fruits = [];
+                this.currentFruit = null;
+                this.nextFruitType = 0;
+                this.mouseX = this.canvas.width / 2;
+                
+                // 水果配置
+                this.fruitConfig = [
+                    { size: 20, points: 1, color: '#FF6B9D', name: '樱桃', emoji: '🍒' },
+                    { size: 30, points: 3, color: '#C44569', name: '草莓', emoji: '🍓' },
+                    { size: 40, points: 6, color: '#FFA726', name: '橙子', emoji: '🍊' },
+                    { size: 50, points: 10, color: '#FFEB3B', name: '柠檬', emoji: '🍋' },
+                    { size: 60, points: 15, color: '#4CAF50', name: '苹果', emoji: '🍎' },
+                    { size: 70, points: 21, color: '#FF5722', name: '桃子', emoji: '🍑' },
+                    { size: 80, points: 28, color: '#9C27B0', name: '李子', emoji: '🟣' },
+                    { size: 90, points: 36, color: '#673AB7', name: '葡萄', emoji: '🍇' },
+                    { size: 100, points: 45, color: '#3F51B5', name: '梨', emoji: '🍐' },
+                    { size: 120, points: 55, color: '#2196F3', name: '椰子', emoji: '🥥' },
+                    { size: 140, points: 66, color: '#00BCD4', name: '西瓜', emoji: '🍉' }
+                ];
+                
+                // 自定义图片
+                this.customImages = {};
+                
+                this.init();
+            }
+            
+            init() {
+                this.loadCustomImages();
+                this.setupEventListeners();
+                this.updateDisplay();
+                this.generateNextFruit();
+                this.startGame();
+            }
+            
+            loadCustomImages() {
+                const saved = sessionStorage.getItem('gameCustomImages');
+                if (saved) {
+                    const imageData = JSON.parse(saved);
+                    Object.keys(imageData).forEach(key => {
+                        const img = new Image();
+                        img.onload = () => {
+                            this.customImages[key] = img;
+                        };
+                        img.src = imageData[key];
+                    });
+                }
+            }
+            
+            setupEventListeners() {
+                // 鼠标和触摸事件
+                const handleMove = (e) => {
+                    if (!this.isGameRunning || this.isPaused) return;
+                    
+                    const rect = this.canvas.getBoundingClientRect();
+                    let clientX;
+                    
+                    if (e.touches) {
+                        e.preventDefault();
+                        clientX = e.touches[0].clientX;
+                    } else {
+                        clientX = e.clientX;
+                    }
+                    
+                    this.mouseX = clientX - rect.left;
+                };
+                
+                const handleClick = (e) => {
+                    if (!this.isGameRunning || this.isPaused || this.currentFruit) return;
+                    e.preventDefault();
+                    this.dropFruit();
+                };
+                
+                this.canvas.addEventListener('mousemove', handleMove);
+                this.canvas.addEventListener('click', handleClick);
+                this.canvas.addEventListener('touchmove', handleMove, { passive: false });
+                this.canvas.addEventListener('touchstart', handleClick, { passive: false });
+            }
+            
+            generateNextFruit() {
+                this.nextFruitType = Math.floor(Math.random() * Math.min(5, this.fruitConfig.length));
+                this.drawNextFruit();
+            }
+            
+            drawNextFruit() {
+                this.nextCtx.clearRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
+                
+                const fruit = this.fruitConfig[this.nextFruitType];
+                const x = this.nextCanvas.width / 2;
+                const y = this.nextCanvas.height / 2;
+                const scale = 0.6;
+                
+                if (this.customImages[this.nextFruitType]) {
+                    this.drawFruitImage(this.nextCtx, this.customImages[this.nextFruitType], x, y, fruit.size * scale);
+                } else {
+                    this.drawDefaultFruit(this.nextCtx, fruit, x, y, fruit.size * scale);
+                }
+            }
+            
+            dropFruit() {
+                if (this.currentFruit || !this.isGameRunning) return;
+                
+                const fruitType = this.nextFruitType;
+                const fruit = this.fruitConfig[fruitType];
+                
+                const x = Math.max(fruit.size / 2, Math.min(this.canvas.width - fruit.size / 2, this.mouseX));
+                
+                const body = Matter.Bodies.circle(x, 50, fruit.size / 2, {
+                    fruitType: fruitType,
+                    isNewlyDropped: true
+                });
+                
+                Matter.World.add(this.world, body);
+                this.fruits.push(body);
+                this.currentFruit = body;
+                
+                setTimeout(() => {
+                    if (this.currentFruit) {
+                        this.currentFruit.isNewlyDropped = false;
+                        this.currentFruit = null;
+                        this.generateNextFruit();
+                    }
+                }, 500);
+            }
+            
+            mergeFruits(fruitA, fruitB) {
+                const x = (fruitA.position.x + fruitB.position.x) / 2;
+                const y = (fruitA.position.y + fruitB.position.y) / 2;
+                
+                Matter.World.remove(this.world, [fruitA, fruitB]);
+                this.fruits = this.fruits.filter(f => f !== fruitA && f !== fruitB);
+                
+                const newType = fruitA.fruitType + 1;
+                const newFruit = this.fruitConfig[newType];
+                
+                const newBody = Matter.Bodies.circle(x, y, newFruit.size / 2, {
+                    fruitType: newType
+                });
+                
+                Matter.World.add(this.world, newBody);
+                this.fruits.push(newBody);
+                
+                this.score += newFruit.points;
+                this.updateDisplay();
+                
+                this.createMergeEffect(x, y, newFruit);
+            }
+            
+            createMergeEffect(x, y, fruit) {
+                for (let i = 0; i < 8; i++) {
+                    this.createParticle(x, y, fruit.color);
+                }
+            }
+            
+            createParticle(x, y, color) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = (this.canvas.offsetLeft + x) + 'px';
+                particle.style.top = (this.canvas.offsetTop + y) + 'px';
+                particle.style.backgroundColor = color;
+                particle.style.width = '4px';
+                particle.style.height = '4px';
+                
+                document.body.appendChild(particle);
+                
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        particle.parentNode.removeChild(particle);
+                    }
+                }, 1000);
+            }
+            
+            gameLoop() {
+                if (!this.isGameRunning || this.isPaused) return;
+                
+                Matter.Engine.update(this.engine);
+                this.checkGameOver();
+                this.render();
+                
+                requestAnimationFrame(() => this.gameLoop());
+            }
+            
+            render() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.fruits.forEach(fruit => {
+                    this.drawFruit(fruit);
+                });
+                
+                if (!this.currentFruit && this.mouseX !== null) {
+                    this.drawPreviewFruit();
+                }
+            }
+            
+            drawFruit(body) {
+                const fruit = this.fruitConfig[body.fruitType];
+                const x = body.position.x;
+                const y = body.position.y;
+                
+                if (this.customImages[body.fruitType]) {
+                    this.drawFruitImage(this.ctx, this.customImages[body.fruitType], x, y, fruit.size);
+                } else {
+                    this.drawDefaultFruit(this.ctx, fruit, x, y, fruit.size);
+                }
+            }
+            
+            drawDefaultFruit(ctx, fruit, x, y, size) {
+                const radius = size / 2;
+                
+                const gradient = ctx.createRadialGradient(x - radius/3, y - radius/3, 0, x, y, radius);
+                gradient.addColorStop(0, this.lightenColor(fruit.color, 30));
+                gradient.addColorStop(1, fruit.color);
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = this.darkenColor(fruit.color, 20);
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.font = `${radius}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#FFF';
+                ctx.fillText(fruit.emoji, x, y);
+            }
+            
+            drawFruitImage(ctx, image, x, y, size) {
+                const radius = size / 2;
+                
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.clip();
+                
+                ctx.drawImage(image, x - radius, y - radius, size, size);
+                
+                ctx.restore();
+                
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            drawPreviewFruit() {
+                const fruit = this.fruitConfig[this.nextFruitType];
+                const x = this.mouseX;
+                const y = 50;
+                
+                this.ctx.save();
+                this.ctx.globalAlpha = 0.6;
+                
+                if (this.customImages[this.nextFruitType]) {
+                    this.drawFruitImage(this.ctx, this.customImages[this.nextFruitType], x, y, fruit.size);
+                } else {
+                    this.drawDefaultFruit(this.ctx, fruit, x, y, fruit.size);
+                }
+                
+                this.ctx.restore();
+            }
+            
+            checkGameOver() {
+                const dangerLine = 100;
+                for (let fruit of this.fruits) {
+                    if (fruit.position.y < dangerLine && Math.abs(fruit.velocity.y) < 0.1) {
+                        this.endGame();
+                        return;
+                    }
+                }
+            }
+            
+            endGame() {
+                this.isGameRunning = false;
+                this.gameOver = true;
+                
+                if (this.score > this.bestScore) {
+                    this.bestScore = this.score;
+                    localStorage.setItem('bestScore', this.bestScore);
+                    this.updateDisplay();
+                }
+                
+                this.showGameOverModal();
+            }
+            
+            showGameOverModal() {
+                document.getElementById('finalScore').textContent = this.score;
+                document.getElementById('gameOverModal').style.display = 'block';
+            }
+            
+            startGame() {
+                this.isGameRunning = true;
+                this.gameLoop();
+            }
+            
+            updateDisplay() {
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('bestScore').textContent = this.bestScore;
+            }
+            
+            lightenColor(color, percent) {
+                const num = parseInt(color.replace("#", ""), 16);
+                const amt = Math.round(2.55 * percent);
+                const R = (num >> 16) + amt;
+                const G = (num >> 8 & 0x00FF) + amt;
+                const B = (num & 0x0000FF) + amt;
+                return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + 
+                             (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + 
+                             (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+            }
+            
+            darkenColor(color, percent) {
+                const num = parseInt(color.replace("#", ""), 16);
+                const amt = Math.round(2.55 * percent);
+                const R = (num >> 16) - amt;
+                const G = (num >> 8 & 0x00FF) - amt;
+                const B = (num & 0x0000FF) - amt;
+                return "#" + (0x1000000 + (R > 255 ? 255 : R < 0 ? 0 : R) * 0x10000 + 
+                             (G > 255 ? 255 : G < 0 ? 0 : G) * 0x100 + 
+                             (B > 255 ? 255 : B < 0 ? 0 : B)).toString(16).slice(1);
+            }
+        }
+
+        // 全局变量
+        let game;
+
+        // 页面加载完成后初始化游戏
+        document.addEventListener('DOMContentLoaded', function() {
+            game = new WatermelonGame();
+        });
+
+        // 全局函数
+        function togglePause() {
+            game.isPaused = !game.isPaused;
+            const btn = document.getElementById('pauseBtn');
+            btn.textContent = game.isPaused ? '▶️ 继续' : '⏸️ 暂停';
+            
+            if (!game.isPaused) {
+                game.gameLoop();
+            }
+        }
+
+        function restartGame() {
+            // 重新加载游戏页面
+            window.location.reload();
+        }
+
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
+

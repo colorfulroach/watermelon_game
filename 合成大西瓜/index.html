@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍉 合成大西瓜</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .title {
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #48CAE4, #0077B6);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            margin: 10px;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.secondary {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+        }
+
+        .fruit-manager {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+        }
+
+        .fruit-manager h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .fruit-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .fruit-item {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fruit-item:hover {
+            border-color: #48CAE4;
+            transform: scale(1.05);
+        }
+
+        .fruit-item.has-custom {
+            border-color: #4CAF50;
+        }
+
+        .fruit-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-bottom: 5px;
+            object-fit: cover;
+        }
+
+        .fruit-name {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .instructions h4 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .instructions ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .instructions li {
+            padding: 5px 0;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-zone {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-zone:hover {
+            border-color: #48CAE4;
+            background: rgba(72, 202, 228, 0.1);
+        }
+
+        .best-score {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .title {
+                font-size: 2em;
+            }
+            
+            .fruit-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">🍉 合成大西瓜</h1>
+        <p class="subtitle">自定义版本</p>
+        
+        <div class="best-score" id="bestScoreDisplay">
+            最高分: <span id="bestScore">0</span>
+        </div>
+
+        <div class="fruit-manager">
+            <h3>🎨 水果图片管理</h3>
+            <div class="upload-zone" onclick="document.getElementById('bulkUpload').click()">
+                📸 点击批量上传图片<br>
+                <small>或单击下方水果单独替换</small>
+            </div>
+            <input type="file" id="bulkUpload" accept="image/*" multiple>
+            
+            <div class="fruit-grid" id="fruitGrid">
+                <!-- 动态生成 -->
+            </div>
+            
+            <button class="btn secondary" onclick="resetImages()">🔄 重置为默认图片</button>
+        </div>
+
+        <div class="instructions">
+            <h4>🎮 游戏说明</h4>
+            <ul>
+                <li>🖱️ 触摸移动控制水果位置，点击投放</li>
+                <li>🍇 相同水果碰撞会合成更大的水果</li>
+                <li>📸 可以上传自定义图片替换水果</li>
+                <li>🎯 目标：合成最大的西瓜！</li>
+            </ul>
+        </div>
+
+        <button class="btn" onclick="startGame()">🎮 开始游戏</button>
+        
+        <input type="file" id="singleUpload" accept="image/*" style="display: none;">
+    </div>
+
+    <script>
+        // 水果配置
+        const fruitConfig = [
+            { size: 20, points: 1, color: '#FF6B9D', name: '樱桃', emoji: '🍒' },
+            { size: 30, points: 3, color: '#C44569', name: '草莓', emoji: '🍓' },
+            { size: 40, points: 6, color: '#FFA726', name: '橙子', emoji: '🍊' },
+            { size: 50, points: 10, color: '#FFEB3B', name: '柠檬', emoji: '🍋' },
+            { size: 60, points: 15, color: '#4CAF50', name: '苹果', emoji: '🍎' },
+            { size: 70, points: 21, color: '#FF5722', name: '桃子', emoji: '🍑' },
+            { size: 80, points: 28, color: '#9C27B0', name: '李子', emoji: '🟣' },
+            { size: 90, points: 36, color: '#673AB7', name: '葡萄', emoji: '🍇' },
+            { size: 100, points: 45, color: '#3F51B5', name: '梨', emoji: '🍐' },
+            { size: 120, points: 55, color: '#2196F3', name: '椰子', emoji: '🥥' },
+            { size: 140, points: 66, color: '#00BCD4', name: '西瓜', emoji: '🍉' }
+        ];
+
+        let customImages = {};
+        let selectedFruitIndex = -1;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCustomImages();
+            updateDisplay();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // 批量上传
+            document.getElementById('bulkUpload').addEventListener('change', function(e) {
+                handleBulkUpload(e.target.files);
+            });
+
+            // 单个上传
+            document.getElementById('singleUpload').addEventListener('change', function(e) {
+                if (e.target.files[0] && selectedFruitIndex >= 0) {
+                    handleSingleUpload(selectedFruitIndex, e.target.files[0]);
+                }
+            });
+        }
+
+        function handleBulkUpload(files) {
+            Array.from(files).forEach((file, index) => {
+                if (file.type.startsWith('image/') && index < fruitConfig.length) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        customImages[index] = e.target.result;
+                        saveCustomImages();
+                        updateDisplay();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        function handleSingleUpload(index, file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                customImages[index] = e.target.result;
+                saveCustomImages();
+                updateDisplay();
+            };
+            reader.readAsDataURL(file);
+            selectedFruitIndex = -1;
+        }
+
+        function selectFruit(index) {
+            selectedFruitIndex = index;
+            document.getElementById('singleUpload').click();
+        }
+
+        function createDefaultFruitImage(fruit) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 60;
+            canvas.height = 60;
+            const ctx = canvas.getContext('2d');
+            
+            // 渐变背景
+            const gradient = ctx.createRadialGradient(15, 15, 0, 30, 30, 30);
+            gradient.addColorStop(0, lightenColor(fruit.color, 30));
+            gradient.addColorStop(1, fruit.color);
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(30, 30, 25, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 边框
+            ctx.strokeStyle = darkenColor(fruit.color, 20);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 表情符号
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#FFF';
+            ctx.fillText(fruit.emoji, 30, 30);
+            
+            return canvas.toDataURL();
+        }
+
+        function updateDisplay() {
+            // 更新最高分
+            const bestScore = localStorage.getItem('bestScore') || 0;
+            document.getElementById('bestScore').textContent = bestScore;
+
+            // 更新水果网格
+            const grid = document.getElementById('fruitGrid');
+            grid.innerHTML = '';
+
+            fruitConfig.forEach((fruit, index) => {
+                const item = document.createElement('div');
+                item.className = 'fruit-item';
+                if (customImages[index]) {
+                    item.classList.add('has-custom');
+                }
+                item.onclick = () => selectFruit(index);
+
+                const img = document.createElement('img');
+                img.className = 'fruit-preview';
+                img.src = customImages[index] || createDefaultFruitImage(fruit);
+
+                const name = document.createElement('div');
+                name.className = 'fruit-name';
+                name.textContent = fruit.name;
+
+                item.appendChild(img);
+                item.appendChild(name);
+                grid.appendChild(item);
+            });
+        }
+
+        function resetImages() {
+            if (confirm('确定要重置所有自定义图片吗？')) {
+                customImages = {};
+                localStorage.removeItem('customImages');
+                updateDisplay();
+            }
+        }
+
+        function saveCustomImages() {
+            localStorage.setItem('customImages', JSON.stringify(customImages));
+        }
+
+        function loadCustomImages() {
+            const saved = localStorage.getItem('customImages');
+            if (saved) {
+                customImages = JSON.parse(saved);
+            }
+        }
+
+        function startGame() {
+            // 保存自定义图片到会话存储
+            sessionStorage.setItem('gameCustomImages', JSON.stringify(customImages));
+            // 跳转到游戏页面
+            window.location.href = 'game.html';
+        }
+
+        // 颜色工具函数
+        function lightenColor(color, percent) {
+            const num = parseInt(color.replace("#", ""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + 
+                         (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + 
+                         (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+        }
+
+        function darkenColor(color, percent) {
+            const num = parseInt(color.replace("#", ""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) - amt;
+            const G = (num >> 8 & 0x00FF) - amt;
+            const B = (num & 0x0000FF) - amt;
+            return "#" + (0x1000000 + (R > 255 ? 255 : R < 0 ? 0 : R) * 0x10000 + 
+                         (G > 255 ? 255 : G < 0 ? 0 : G) * 0x100 + 
+                         (B > 255 ? 255 : B < 0 ? 0 : B)).toString(16).slice(1);
+        }
+    </script>
+</body>
+</html>

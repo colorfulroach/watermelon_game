@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍉 合成大西瓜 - 一键版本</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .page {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .title {
+            font-size: 2.2em;
+            color: #333;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #48CAE4, #0077B6);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            margin: 8px;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn.secondary {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+        }
+
+        .btn.danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        }
+
+        .btn.small {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            max-width: 150px;
+        }
+
+        /* 主页样式 */
+        .fruit-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .fruit-item {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fruit-item:hover {
+            border-color: #48CAE4;
+            transform: scale(1.05);
+        }
+
+        .fruit-item.has-custom {
+            border-color: #4CAF50;
+        }
+
+        .fruit-preview {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            margin-bottom: 3px;
+            object-fit: cover;
+        }
+
+        .fruit-name {
+            font-size: 0.7em;
+            color: #666;
+        }
+
+        .upload-zone {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            text-align: center;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .upload-zone:hover {
+            border-color: #48CAE4;
+            background: rgba(72, 202, 228, 0.1);
+        }
+
+        .best-score {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 15px;
+            margin: 15px 0;
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        /* 游戏页面样式 */
+        .game-page {
+            max-width: 100%;
+            width: 100%;
+            height: 100vh;
+            border-radius: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .score-info {
+            display: flex;
+            gap: 15px;
+        }
+
+        .score, .header-best-score {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .game-area {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        #gameCanvas {
+            border: 3px solid #333;
+            border-radius: 15px;
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 100%);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            touch-action: none;
+        }
+
+        .side-info {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 10px;
+            width: 100px;
+        }
+
+        .next-fruit {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .next-fruit h4 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 0.8em;
+        }
+
+        #nextCanvas {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .game-tips {
+            font-size: 0.7em;
+            color: #666;
+            line-height: 1.3;
+        }
+
+        /* 结束页面样式 */
+        .final-score {
+            font-size: 1.8em;
+            color: #ff6b6b;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .game-area {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .side-info {
+                width: 100%;
+                max-width: 350px;
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+            }
+            
+            .game-tips {
+                display: none;
+            }
+            
+            #gameCanvas {
+                width: 100%;
+                max-width: 350px;
+                height: auto;
+            }
+            
+            .game-header {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .fruit-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            animation: particle-float 1s ease-out forwards;
+        }
+
+        @keyframes particle-float {
+            to {
+                transform: translateY(-80px) scale(0);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 主页面 -->
+    <div id="homePage" class="page active">
+        <h1 class="title">🍉 合成大西瓜</h1>
+        <p style="color: #666; margin-bottom: 20px;">一键版本 - 无需安装</p>
+        
+        <div class="best-score">
+            最高分: <span id="homeScore">0</span>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <h3 style="color: #333; margin-bottom: 10px;">🎨 自定义水果图片</h3>
+            <div class="upload-zone" onclick="document.getElementById('bulkUpload').click()">
+                📸 点击批量上传<br><small>可单击水果单独替换</small>
+            </div>
+            <input type="file" id="bulkUpload" accept="image/*" multiple>
+            
+            <div class="fruit-grid" id="fruitGrid"></div>
+            
+            <button class="btn secondary small" onclick="resetImages()">🔄 重置图片</button>
+        </div>
+
+        <button class="btn" onclick="startGame()">🎮 开始游戏</button>
+        
+        <div style="margin-top: 20px; font-size: 0.8em; color: #666; text-align: left;">
+            <p>🖱️ 触摸移动控制位置，点击投放</p>
+            <p>🍇 相同水果碰撞会合成更大的水果</p>
+            <p>🎯 目标：合成最大的西瓜！</p>
+        </div>
+        
+        <input type="file" id="singleUpload" accept="image/*">
+    </div>
+
+    <!-- 游戏页面 -->
+    <div id="gamePage" class="page game-page">
+        <div class="game-header">
+            <div style="display: flex; gap: 8px;">
+                <button class="btn small danger" onclick="goHome()">🏠 主页</button>
+                <button class="btn small" id="pauseBtn" onclick="togglePause()">⏸️ 暂停</button>
+            </div>
+            <div class="score-info">
+                <div class="score">分数: <span id="gameScore">0</span></div>
+                <div class="header-best-score">最高: <span id="gameBestScore">0</span></div>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <canvas id="gameCanvas" width="350" height="500"></canvas>
+            
+            <div class="side-info">
+                <div class="next-fruit">
+                    <h4>下一个:</h4>
+                    <canvas id="nextCanvas" width="50" height="50"></canvas>
+                </div>
+                
+                <div class="game-tips">
+                    <p>移动: 控制位置</p>
+                    <p>点击: 投放水果</p>
+                    <p>合成: 相同碰撞</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏结束页面 -->
+    <div id="gameOverPage" class="page">
+        <h1 class="title">🎮 游戏结束</h1>
+        
+        <div class="final-score">
+            得分: <span id="finalScore">0</span>
+        </div>
+        
+        <div id="newRecord" style="display: none; color: #4CAF50; font-weight: bold; margin: 10px 0;">
+            🎉 新纪录！
+        </div>
+        
+        <div class="buttons">
+            <button class="btn" onclick="playAgain()">🔄 再来一局</button>
+            <button class="btn secondary" onclick="goHome()">🏠 返回主页</button>
+        </div>
+        
+        <div style="margin-top: 30px; font-size: 0.9em; color: #666;">
+            <p>感谢游戏！</p>
+            <p>继续挑战更高分数吧～</p>
+        </div>
+    </div>
+
+    <script>
+        // 游戏配置
+        const fruitConfig = [
+            { size: 18, points: 1, color: '#FF6B9D', name: '樱桃', emoji: '🍒' },
+            { size: 25, points: 3, color: '#C44569', name: '草莓', emoji: '🍓' },
+            { size: 32, points: 6, color: '#FFA726', name: '橙子', emoji: '🍊' },
+            { size: 40, points: 10, color: '#FFEB3B', name: '柠檬', emoji: '🍋' },
+            { size: 48, points: 15, color: '#4CAF50', name: '苹果', emoji: '🍎' },
+            { size: 56, points: 21, color: '#FF5722', name: '桃子', emoji: '🍑' },
+            { size: 64, points: 28, color: '#9C27B0', name: '李子', emoji: '🟣' },
+            { size: 72, points: 36, color: '#673AB7', name: '葡萄', emoji: '🍇' },
+            { size: 80, points: 45, color: '#3F51B5', name: '梨', emoji: '🍐' },
+            { size: 90, points: 55, color: '#2196F3', name: '椰子', emoji: '🥥' },
+            { size: 100, points: 66, color: '#00BCD4', name: '西瓜', emoji: '🍉' }
+        ];
+
+        // 简化的物理引擎
+        class SimplePhysics {
+            constructor(width, height) {
+                this.width = width;
+                this.height = height;
+                this.bodies = [];
+                this.gravity = 0.5;
+            }
+
+            addBody(x, y, radius, type) {
+                const body = {
+                    x, y, radius, type,
+                    vx: 0, vy: 0,
+                    isNew: true
+                };
+                this.bodies.push(body);
+                return body;
+            }
+
+            removeBody(body) {
+                const index = this.bodies.indexOf(body);
+                if (index > -1) this.bodies.splice(index, 1);
+            }
+
+            update() {
+                // 物理更新
+                this.bodies.forEach(body => {
+                    body.vy += this.gravity;
+                    body.x += body.vx;
+                    body.y += body.vy;
+
+                    // 边界碰撞
+                    if (body.x - body.radius < 0) {
+                        body.x = body.radius;
+                        body.vx *= -0.5;
+                    }
+                    if (body.x + body.radius > this.width) {
+                        body.x = this.width - body.radius;
+                        body.vx *= -0.5;
+                    }
+                    if (body.y + body.radius > this.height) {
+                        body.y = this.height - body.radius;
+                        body.vy *= -0.3;
+                        body.vx *= 0.8;
+                    }
+
+                    // 阻尼
+                    body.vx *= 0.99;
+                    body.vy *= 0.99;
+                });
+
+                // 碰撞检测
+                for (let i = 0; i < this.bodies.length; i++) {
+                    for (let j = i + 1; j < this.bodies.length; j++) {
+                        const a = this.bodies[i];
+                        const b = this.bodies[j];
+                        
+                        const dx = a.x - b.x;
+                        const dy = a.y - b.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        const minDist = a.radius + b.radius;
+
+                        if (dist < minDist) {
+                            // 分离
+                            const overlap = minDist - dist;
+                            const sepX = (dx / dist) * overlap * 0.5;
+                            const sepY = (dy / dist) * overlap * 0.5;
+                            
+                            a.x += sepX;
+                            a.y += sepY;
+                            b.x -= sepX;
+                            b.y -= sepY;
+
+                            // 速度交换
+                            const tempVx = a.vx;
+                            const tempVy = a.vy;
+                            a.vx = b.vx * 0.8;
+                            a.vy = b.vy * 0.8;
+                            b.vx = tempVx * 0.8;
+                            b.vy = tempVy * 0.8;
+
+                            // 合成检查
+                            if (a.type === b.type && !a.isNew && !b.isNew && a.type < fruitConfig.length - 1) {
+                                game.merge(a, b);
+                            }
+                        }
+                    }
+                }
+
+                // 移除新标记
+                this.bodies.forEach(body => {
+                    if (body.isNew) body.isNew = false;
+                });
+            }
+        }
+
+        // 游戏类
+        class Game {
+            constructor() {
+                this.physics = new SimplePhysics(350, 500);
+                this.canvas = null;
+                this.ctx = null;
+                this.nextCanvas = null;
+                this.nextCtx = null;
+                
+                this.score = 0;
+                this.bestScore = parseInt(localStorage.getItem('bestScore')) || 0;
+                this.isRunning = false;
+                this.isPaused = false;
+                this.mouseX = 175;
+                this.nextType = 0;
+                this.currentFruit = null;
+                
+                this.customImages = {};
+                this.loadCustomImages();
+            }
+
+            init() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.nextCanvas = document.getElementById('nextCanvas');
+                this.nextCtx = this.nextCanvas.getContext('2d');
+                
+                this.setupEvents();
+                this.generateNext();
+                this.updateUI();
+                this.start();
+            }
+
+            setupEvents() {
+                const handleMove = (e) => {
+                    if (!this.isRunning || this.isPaused) return;
+                    
+                    const rect = this.canvas.getBoundingClientRect();
+                    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    this.mouseX = clientX - rect.left;
+                    
+                    if (e.preventDefault) e.preventDefault();
+                };
+
+                const handleClick = (e) => {
+                    if (!this.isRunning || this.isPaused || this.currentFruit) return;
+                    this.drop();
+                    if (e.preventDefault) e.preventDefault();
+                };
+
+                this.canvas.addEventListener('mousemove', handleMove);
+                this.canvas.addEventListener('click', handleClick);
+                this.canvas.addEventListener('touchmove', handleMove, { passive: false });
+                this.canvas.addEventListener('touchstart', handleClick, { passive: false });
+            }
+
+            generateNext() {
+                this.nextType = Math.floor(Math.random() * Math.min(5, fruitConfig.length));
+                this.drawNext();
+            }
+
+            drawNext() {
+                this.nextCtx.clearRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
+                const fruit = fruitConfig[this.nextType];
+                this.drawFruit(this.nextCtx, this.nextCanvas.width/2, this.nextCanvas.height/2, fruit, this.nextType, 0.7);
+            }
+
+            drop() {
+                if (this.currentFruit) return;
+                
+                const fruit = fruitConfig[this.nextType];
+                const x = Math.max(fruit.size/2, Math.min(this.canvas.width - fruit.size/2, this.mouseX));
+                
+                this.currentFruit = this.physics.addBody(x, 40, fruit.size/2, this.nextType);
+                
+                setTimeout(() => {
+                    this.currentFruit = null;
+                    this.generateNext();
+                }, 300);
+            }
+
+            merge(a, b) {
+                const x = (a.x + b.x) / 2;
+                const y = (a.y + b.y) / 2;
+                const newType = a.type + 1;
+                const newFruit = fruitConfig[newType];
+                
+                this.physics.removeBody(a);
+                this.physics.removeBody(b);
+                
+                this.physics.addBody(x, y, newFruit.size/2, newType);
+                
+                this.score += newFruit.points;
+                this.updateUI();
+                
+                this.createEffect(x, y, newFruit.color);
+            }
+
+            createEffect(x, y, color) {
+                for (let i = 0; i < 6; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.position = 'absolute';
+                    particle.style.left = (this.canvas.offsetLeft + x) + 'px';
+                    particle.style.top = (this.canvas.offsetTop + y) + 'px';
+                    particle.style.backgroundColor = color;
+                    particle.style.width = '3px';
+                    particle.style.height = '3px';
+                    
+                    document.body.appendChild(particle);
+                    
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 1000);
+                }
+            }
+
+            checkGameOver() {
+                return this.physics.bodies.some(body => body.y < 80 && Math.abs(body.vy) < 0.1);
+            }
+
+            gameLoop() {
+                if (!this.isRunning || this.isPaused) return;
+                
+                this.physics.update();
+                
+                if (this.checkGameOver()) {
+                    this.gameOver();
+                    return;
+                }
+                
+                this.render();
+                requestAnimationFrame(() => this.gameLoop());
+            }
+
+            render() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制水果
+                this.physics.bodies.forEach(body => {
+                    const fruit = fruitConfig[body.type];
+                    this.drawFruit(this.ctx, body.x, body.y, fruit, body.type, 1);
+                });
+                
+                // 绘制预览
+                if (!this.currentFruit) {
+                    const fruit = fruitConfig[this.nextType];
+                    this.ctx.save();
+                    this.ctx.globalAlpha = 0.5;
+                    this.drawFruit(this.ctx, this.mouseX, 40, fruit, this.nextType, 1);
+                    this.ctx.restore();
+                }
+            }
+
+            drawFruit(ctx, x, y, fruit, type, scale) {
+                const radius = fruit.size * scale / 2;
+                
+                if (this.customImages[type]) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.drawImage(this.customImages[type], x - radius, y - radius, radius * 2, radius * 2);
+                    ctx.restore();
+                    
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                } else {
+                    const gradient = ctx.createRadialGradient(x - radius/3, y - radius/3, 0, x, y, radius);
+                    gradient.addColorStop(0, this.lighten(fruit.color, 30));
+                    gradient.addColorStop(1, fruit.color);
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = this.darken(fruit.color, 20);
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    ctx.font = `${radius * 0.8}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#FFF';
+                    ctx.fillText(fruit.emoji, x, y);
+                }
+            }
+
+            lighten(color, percent) {
+                const num = parseInt(color.replace("#", ""), 16);
+                const amt = Math.round(2.55 * percent);
+                const R = Math.min(255, (num >> 16) + amt);
+                const G = Math.min(255, (num >> 8 & 0x00FF) + amt);
+                const B = Math.min(255, (num & 0x0000FF) + amt);
+                return "#" + ((R << 16) | (G << 8) | B).toString(16).padStart(6, '0');
+            }
+
+            darken(color, percent) {
+                const num = parseInt(color.replace("#", ""), 16);
+                const amt = Math.round(2.55 * percent);
+                const R = Math.max(0, (num >> 16) - amt);
+                const G = Math.max(0, (num >> 8 & 0x00FF) - amt);
+                const B = Math.max(0, (num & 0x0000FF) - amt);
+                return "#" + ((R << 16) | (G << 8) | B).toString(16).padStart(6, '0');
+            }
+
+            start() {
+                this.isRunning = true;
+                this.gameLoop();
+            }
+
+            pause() {
+                this.isPaused = !this.isPaused;
+                if (!this.isPaused) this.gameLoop();
+            }
+
+            gameOver() {
+                this.isRunning = false;
+                
+                if (this.score > this.bestScore) {
+                    this.bestScore = this.score;
+                    localStorage.setItem('bestScore', this.bestScore);
+                    document.getElementById('newRecord').style.display = 'block';
+                } else {
+                    document.getElementById('newRecord').style.display = 'none';
+                }
+                
+                document.getElementById('finalScore').textContent = this.score;
+                showPage('gameOverPage');
+            }
+
+            updateUI() {
+                document.getElementById('gameScore').textContent = this.score;
+                document.getElementById('gameBestScore').textContent = this.bestScore;
+            }
+
+            loadCustomImages() {
+                const saved = localStorage.getItem('customImages');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    Object.keys(data).forEach(key => {
+                        const img = new Image();
+                        img.onload = () => {
+                            this.customImages[key] = img;
+                        };
+                        img.src = data[key];
+                    });
+                }
+            }
+        }
+
+        // 全局变量
+        let game;
+        let customImages = {};
+        let selectedFruit = -1;
+
+        // 页面管理
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // 主页功能
+        function updateHomePage() {
+            const bestScore = localStorage.getItem('bestScore') || 0;
+            document.getElementById('homeScore').textContent = bestScore;
+            
+            const grid = document.getElementById('fruitGrid');
+            grid.innerHTML = '';
+            
+            fruitConfig.forEach((fruit, index) => {
+                const item = document.createElement('div');
+                item.className = 'fruit-item';
+                if (customImages[index]) item.classList.add('has-custom');
+                item.onclick = () => selectFruit(index);
+                
+                const img = document.createElement('img');
+                img.className = 'fruit-preview';
+                img.src = customImages[index] || createDefaultImage(fruit);
+                
+                const name = document.createElement('div');
+                name.className = 'fruit-name';
+                name.textContent = fruit.name;
+                
+                item.appendChild(img);
+                item.appendChild(name);
+                grid.appendChild(item);
+            });
+        }
+
+        function createDefaultImage(fruit) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 50;
+            canvas.height = 50;
+            const ctx = canvas.getContext('2d');
+            
+            const gradient = ctx.createRadialGradient(15, 15, 0, 25, 25, 20);
+            gradient.addColorStop(0, lightenColor(fruit.color, 30));
+            gradient.addColorStop(1, fruit.color);
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(25, 25, 20, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#FFF';
+            ctx.fillText(fruit.emoji, 25, 25);
+            
+            return canvas.toDataURL();
+        }
+
+        function lightenColor(color, percent) {
+            const num = parseInt(color.replace("#", ""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.min(255, (num >> 16) + amt);
+            const G = Math.min(255, (num >> 8 & 0x00FF) + amt);
+            const B = Math.min(255, (num & 0x0000FF) + amt);
+            return "#" + ((R << 16) | (G << 8) | B).toString(16).padStart(6, '0');
+        }
+
+        function loadCustomImages() {
+            const saved = localStorage.getItem('customImages');
+            if (saved) {
+                const data = JSON.parse(saved);
+                Object.keys(data).forEach(key => {
+                    customImages[key] = data[key];
+                });
+            }
+        }
+
+        function saveCustomImages() {
+            localStorage.setItem('customImages', JSON.stringify(customImages));
+        }
+
+        function selectFruit(index) {
+            selectedFruit = index;
+            document.getElementById('singleUpload').click();
+        }
+
+        function resetImages() {
+            if (confirm('确定重置所有自定义图片吗？')) {
+                customImages = {};
+                localStorage.removeItem('customImages');
+                updateHomePage();
+            }
+        }
+
+        // 游戏控制
+        function startGame() {
+            showPage('gamePage');
+            setTimeout(() => {
+                game = new Game();
+                game.init();
+            }, 100);
+        }
+
+        function togglePause() {
+            if (game) {
+                game.pause();
+                document.getElementById('pauseBtn').textContent = game.isPaused ? '▶️ 继续' : '⏸️ 暂停';
+            }
+        }
+
+        function playAgain() {
+            startGame();
+        }
+
+        function goHome() {
+            showPage('homePage');
+            updateHomePage();
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCustomImages();
+            updateHomePage();
+            
+            // 图片上传事件
+            document.getElementById('bulkUpload').addEventListener('change', function(e) {
+                Array.from(e.target.files).forEach((file, index) => {
+                    if (file.type.startsWith('image/') && index < fruitConfig.length) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            customImages[index] = e.target.result;
+                            saveCustomImages();
+                            updateHomePage();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            });
+            
+            document.getElementById('singleUpload').addEventListener('change', function(e) {
+                if (e.target.files[0] && selectedFruit >= 0) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        customImages[selectedFruit] = e.target.result;
+                        saveCustomImages();
+                        updateHomePage();
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
+                    selectedFruit = -1;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
